@@ -1,4 +1,4 @@
-%%% @doc ZXW Hisself
+%%% @doc
 %%% This module is the primary interface GUI programmers will deal with. It contains
 %%% wrappers for wxErlang commands to build, display and interact with meta-widgets
 %%% built from wxErlang components while (hopefully) leaving the calling Erlang code
