@@ -171,9 +171,9 @@ modal_text_input(Title, Header, Labels, Parent) ->
 %%
 %% The returned grid, when rendered, will appear as:
 %%  ```
-%%           Romaji     Kanji
-%%  Family  [______]   [______]
-%%  Given   [______]   [______]
+%%           Family     Given
+%%  Romaji  [______]   [______]
+%%  Kanji   [______]   [______]
 %%  '''
 -spec text_input_grid(Cols, Rows, WxParent) -> {GridSz, FieldList}
     when Cols       :: [rank()],
