@@ -189,13 +189,13 @@ modal_text_input(WxParent, Title, Header, Labels) ->
 %%  Romaji  [______]   [______]
 %%  Kanji   [______]   [______]
 %%  '''
--spec text_input_grid(WxParent, Cols, Rows) -> {GridSz, FieldList}
+-spec text_input_grid(WxParent, Rows, Cols) -> {GridSz, FieldList}
     when WxParent   :: wx:wx_object(),
-         Cols       :: [rank()],
          Rows       :: [rank()],
+         Cols       :: [rank()],
          GridSz     :: wx:wx_object(),
          FieldList  :: [indexed_widget()].
-text_input_grid(WxParent, Cols, Rows) ->
+text_input_grid(WxParent, Rows, Cols) ->
     Width = length(Cols) + 1,
 
     GridSz = wxFlexGridSizer:new(Width, [{vgap, 4}, {hgap, 4}]),
@@ -290,8 +290,9 @@ render_row(WxParent, RTag, [{CTag, _} | Cols], Acc) ->
 list_picker(WxParent, PickerID, AddID, DelID, Headers, Items, Label) ->
     Sizer = wxStaticBoxSizer:new(?wxHORIZONTAL, WxParent, [{label, Label}]),
     Picker = list_control(WxParent, PickerID, Headers, Items),
-    AddButton = png_button(WxParent, AddID, ?iconADD),
-    DelButton = png_button(WxParent, DelID, ?iconDEL),
+    {ok, IconDir} = zxw_control:get_conf(icon_dir),
+    AddButton = png_button(WxParent, AddID, filename:join(IconDir, ?iconADD)),
+    DelButton = png_button(WxParent, DelID, filename:join(IconDir, ?iconDEL)),
     ButtSz = wxBoxSizer:new(?wxVERTICAL),
     _ = wxSizer:add(Sizer, Picker, flags(wide)),
     _ = wxSizer:add(ButtSz, AddButton, flags(base)),
