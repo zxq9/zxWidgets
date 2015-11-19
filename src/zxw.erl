@@ -31,7 +31,7 @@
 -module(zxw).
 -include_lib("wx/include/wx.hrl").
 -export([flags/1,
-         text_input_grid/3, list_picker/7, modal_text_input/4,
+         text_input_grid/3, list_picker/7, list_control/4, modal_text_input/4,
          yes_no_box/1, png_button/3,
          show_message/2]).
 
@@ -267,7 +267,7 @@ render_row(WxParent, RTag, [{CTag, _} | Cols], Acc) ->
     render_row(WxParent, RTag, Cols, [{{RTag, CTag}, InputField} | Acc]).
 
 %% @doc
-%% Creates a wxListCtrl, places it within a wxBoxSizer and adds "add element" and
+%% Creates a wxListCtrl, places it within a wxStaticBoxSizer and adds "add element" and
 %% "del element" buttons. The object identities must be passed in to ensure that
 %% listening for `#wx{}' event messages remains simple (matching on `#wx{id=ID}',
 %% for example). The wxListCtrl will be populated with whatever elements are provided
@@ -300,6 +300,9 @@ list_picker(WxParent, PickerID, AddID, DelID, Headers, Items, Label) ->
     _ = wxSizer:add(Sizer, ButtSz, flags(base)),
     {Picker, AddButton, DelButton, Sizer}.
 
+%% @doc
+%% Creates a wxListCtrl and arranges the headers and any item inserts, and returns
+%% the `wx:wx_object()' reference to the wxListCtrl.
 -spec list_control(WxParent, PickerID, Headers, Items) -> Picker
     when WxParent   :: wx:wx_object(),
          PickerID   :: integer(),
