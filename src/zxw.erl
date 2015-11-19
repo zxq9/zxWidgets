@@ -55,16 +55,16 @@
 %% of the form `{AffirmButton, CancelButton, ButtonSizer}' to allow the calling code
 %% to set focus or manipulate aspects of the elements returned as desired.
 %% @end
--spec yes_no_box(Parent) -> {AffirmB, CancelB, ButtonBox}
-    when Parent    :: wx:wx_object(),
+-spec yes_no_box(WxParent) -> {AffirmB, CancelB, ButtonBox}
+    when WxParent  :: wx:wx_object(),
          AffirmB   :: wx:wx_object(),
          CancelB   :: wx:wx_object(),
          ButtonBox :: wx:wx_object().
-yes_no_box(Parent) ->
+yes_no_box(WxParent) ->
     Sizer = wxBoxSizer:new(?wxHORIZONTAL),
     {ok, IconDir} = zxw_control:get_conf(icon_dir),
-    AffirmB = png_button(Parent, ?wxID_OK, filename:join(IconDir, ?iconAFFIRM)),
-    CancelB = png_button(Parent, ?wxID_OK, filename:join(IconDir, ?iconCANCEL)),
+    AffirmB = png_button(WxParent, ?wxID_OK, filename:join(IconDir, ?iconAFFIRM)),
+    CancelB = png_button(WxParent, ?wxID_OK, filename:join(IconDir, ?iconCANCEL)),
     _ = wxSizer:add(Sizer, AffirmB),
     _ = wxSizer:add(Sizer, CancelB),
     {AffirmB, CancelB, Sizer}.
@@ -74,27 +74,27 @@ yes_no_box(Parent) ->
 %% this function must be resolvable by the executing node -- any calls to assist
 %% in path construction (such as `zxw_control:get_conf(icon_dir)') must happen
 %% before calling this function.
--spec png_button(Parent, ID, ImageFilePath) -> Button
-    when Parent        :: wx:wx_object(),
+-spec png_button(WxParent, ID, ImageFilePath) -> Button
+    when WxParent      :: wx:wx_object(),
          ID            :: integer(),
          ImageFilePath :: string(),
          Button        :: wx:wx_object().
-png_button(Parent, ID, ImageFilePath) ->
+png_button(WxParent, ID, ImageFilePath) ->
     Icon = wxBitmap:new(ImageFilePath, [{type, ?wxBITMAP_TYPE_PNG}]),
-    wxBitmapButton:new(Parent, ID, Icon).
+    wxBitmapButton:new(WxParent, ID, Icon).
 
 %% @doc
 %% Displays a notification modal to the user. Accepts and displays arbitrary Erlang
 %% terms. If the Message input is printable unicode then the message will be displayed
 %% with string `"~ts"' formatting, otherwise Erlang term `"~tp"' formatting will be
 %% used. Always returns `ok', regardless how the modal is closed.
--spec show_message(unicode:chardata() | term(), wx:wx_object()) -> ok.
-show_message(Message, Parent) ->
+-spec show_message(wx:wx_object(), unicode:chardata() | term()) -> ok.
+show_message(WxParent, Message) ->
     Format = case io_lib:printable_unicode_list(Message) of
         true  -> "~ts";
         false -> "~tp"
     end,
-    Modal = wxMessageDialog:new(Parent, io_lib:format(Format, [Message])),
+    Modal = wxMessageDialog:new(WxParent, io_lib:format(Format, [Message])),
     _ = wxMessageDialog:showModal(Modal),
     ok = wxMessageDialog:destroy(Modal).
 
@@ -112,18 +112,18 @@ show_message(Message, Parent) ->
 %%
 %% Returns an `ok'-tuple containing utf8 strings ordered according to the
 %% order of the initial Labels argument or the atom `cancel'.
--spec modal_text_input(Title, Header, Labels, WxParent) -> Result
-    when Title     :: unicode:chardata(),
+-spec modal_text_input(WxParent, Title, Header, Labels) -> Result
+    when WxParent  :: wx:wx_object(),
+         Title     :: unicode:chardata(),
          Header    :: unicode:chardata(),
          Labels    :: [unicode:chardata()],
-         WxParent  :: wx:wx_object(),
          Result    :: {ok, Values} | cancel,
          Values    :: [unicode:chardata()].
-modal_text_input(Title, Header, Labels, Parent) ->
+modal_text_input(WxParent, Title, Header, Labels) ->
     BaseFlags = [{proportion, 0}, {flag, ?wxEXPAND}],
     WideFlags = [{proportion, 1}, {flag, ?wxEXPAND}],
 
-    Dialog = wxDialog:new(Parent, ?wxID_ANY, Title),
+    Dialog = wxDialog:new(WxParent, ?wxID_ANY, Title),
     Sz = wxBoxSizer:new(?wxVERTICAL),
     HeadSz = wxStaticBoxSizer:new(?wxVERTICAL, Dialog, [{label, Header}]),
     GridSz = wxFlexGridSizer:new(length(Labels), 2, 4, 4),
@@ -175,13 +175,13 @@ modal_text_input(Title, Header, Labels, Parent) ->
 %%  Romaji  [______]   [______]
 %%  Kanji   [______]   [______]
 %%  '''
--spec text_input_grid(Cols, Rows, WxParent) -> {GridSz, FieldList}
-    when Cols       :: [rank()],
+-spec text_input_grid(WxParent, Cols, Rows) -> {GridSz, FieldList}
+    when WxParent   :: wx:wx_object(),
+         Cols       :: [rank()],
          Rows       :: [rank()],
-         WxParent   :: wx:wx_object(),
          GridSz     :: wx:wx_object(),
          FieldList  :: [indexed_widget()].
-text_input_grid(Cols, Rows, Parent) ->
+text_input_grid(WxParent, Cols, Rows) ->
     Width = length(Cols) + 1,
 
     GridSz = wxFlexGridSizer:new(Width, [{vgap, 4}, {hgap, 4}]),
@@ -189,8 +189,8 @@ text_input_grid(Cols, Rows, Parent) ->
     Flexerize = fun(Col) -> wxFlexGridSizer:addGrowableCol(GridSz, Col) end,
     ok = lists:foreach(Flexerize, lists:seq(1, Width)),
 
-    TopRow = render_head(Cols, Parent),
-    DataRows = render_body(Rows, Cols, Parent),
+    TopRow = render_head(WxParent, Cols),
+    DataRows = render_body(WxParent, Rows, Cols),
     All = lists:flatten([TopRow | DataRows]),
 
     BaseFlags = [{proportion, 0}, {flag, ?wxEXPAND}],
@@ -205,58 +205,58 @@ text_input_grid(Cols, Rows, Parent) ->
     FieldList = lists:flatten([tl(DataRow) || DataRow <- DataRows]),
     {GridSz, FieldList}.
 
--spec render_head(Cols, Parent) -> Widgets
-    when Cols    :: [rank()],
-         Parent  :: wx:wx_object(),
-         Widgets :: [indexed_widget()].
-render_head(Cols, Parent) ->
+-spec render_head(WxParent, Cols) -> Widgets
+    when WxParent :: wx:wx_object(),
+         Cols     :: [rank()],
+         Widgets  :: [indexed_widget()].
+render_head(WxParent, Cols) ->
     Spacer = {blank, wxBoxSizer:new(?wxHORIZONTAL)},
-    Labels = render_head(Cols, Parent, []),
+    Labels = render_head(Cols, WxParent, []),
     [Spacer | Labels].
 
--spec render_head(Cols, Parent, Acc) -> Widgets
-    when Cols    :: [rank()],
-         Parent  :: wx:wx_object(),
-         Acc     :: [indexed_widget()],
-         Widgets :: [indexed_widget()].
-render_head([], _, Acc) ->
+-spec render_head(WxParent, Cols, Acc) -> Widgets
+    when WxParent :: wx:wx_object(),
+         Cols     :: [rank()],
+         Acc      :: [indexed_widget()],
+         Widgets  :: [indexed_widget()].
+render_head(WxParent, [], Acc) ->
     lists:reverse(Acc);
-render_head([{Tag, Label} | Cols], Parent, Acc) ->
-    Element = {{Tag, label}, wxStaticText:new(Parent, ?wxID_ANY, Label)},
-    render_head(Cols, Parent, [Element | Acc]).
+render_head(WxParent, [{Tag, Label} | Cols], Acc) ->
+    Element = {{Tag, label}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
+    render_head(WxParent, Cols, [Element | Acc]).
 
--spec render_body(Rows, Cols, Parent) -> Widgets
-    when Rows    :: [rank()],
-         Cols    :: [rank()],
-         Parent  :: wx:wx_object(),
-         Widgets :: [[indexed_widget()]].
-render_body(Rows, Cols, Parent) ->
-    render_body(Rows, Cols, Parent, []).
+-spec render_body(WxParent, Rows, Cols) -> Widgets
+    when WxParent :: wx:wx_object(),
+         Rows     :: [rank()],
+         Cols     :: [rank()],
+         Widgets  :: [[indexed_widget()]].
+render_body(WxParent, Rows, Cols) ->
+    render_body(WxParent, Rows, Cols, []).
 
--spec render_body(Rows, Cols, Parent, Acc) -> Widgets
-    when Rows    :: [rank()],
-         Cols    :: [rank()],
-         Parent  :: wx:wx_object(),
-         Acc     :: [indexed_widget()],
-         Widgets :: [[indexed_widget()]].
-render_body([], _, _, Acc) ->
+-spec render_body(WxParent, Rows, Cols, Acc) -> Widgets
+    when WxParent :: wx:wx_object(),
+         Rows     :: [rank()],
+         Cols     :: [rank()],
+         Acc      :: [indexed_widget()],
+         Widgets  :: [[indexed_widget()]].
+render_body(_, [], _, Acc) ->
     lists:reverse(Acc);
-render_body([{Tag, Label} | Rows], Cols, Parent, Acc) ->
-    First = {{label, Tag}, wxStaticText:new(Parent, ?wxID_ANY, Label)},
-    Fields = render_row(Tag, Cols, Parent, []),
-    render_body(Rows, Cols, Parent, [[First | Fields] | Acc]).
+render_body(WxParent, [{Tag, Label} | Rows], Cols, Acc) ->
+    First = {{label, Tag}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
+    Fields = render_row(WxParent, Tag, Cols, []),
+    render_body(WxParent, Rows, Cols, [[First | Fields] | Acc]).
 
--spec render_row(Rows, Cols, Parent, Acc) -> Widgets
-    when Rows    :: [rank()],
-         Cols    :: [rank()],
-         Parent  :: wx:wx_object(),
-         Acc     :: [indexed_widget()],
-         Widgets :: [indexed_widget()].
-render_row(_, [], _, Acc) ->
+-spec render_row(WxParent, Rows, Cols, Acc) -> Widgets
+    when WxParent :: wx:wx_object(),
+         Rows     :: [rank()],
+         Cols     :: [rank()],
+         Acc      :: [indexed_widget()],
+         Widgets  :: [indexed_widget()].
+render_row(_, _, [], Acc) ->
     lists:reverse(Acc);
-render_row(RTag, [{CTag, _} | Cols], Parent, Acc) ->
-    InputField = wxTextCtrl:new(Parent, ?wxID_ANY, [{style, ?wxTAB_TRAVERSAL}]),
-    render_row(RTag, Cols, Parent, [{{RTag, CTag}, InputField} | Acc]).
+render_row(WxParent, RTag, [{CTag, _} | Cols], Acc) ->
+    InputField = wxTextCtrl:new(WxParent, ?wxID_ANY, [{style, ?wxTAB_TRAVERSAL}]),
+    render_row(WxParent, RTag, Cols, [{{RTag, CTag}, InputField} | Acc]).
 
 %% @doc
 %% Creates a wxListCtrl, places it within a wxBoxSizer and adds "add element" and
@@ -267,23 +267,23 @@ render_row(RTag, [{CTag, _} | Cols], Parent, Acc) ->
 %%
 %% Returns a 4-tuple of: `{WxListCtrl, AddB, DelB, Sizer}' to allow calling code
 %% to perform any custom manipulations desired.
--spec list_picker(PickerID, AddID, DelID, Headers, Items, Parent, Label) -> Result
-    when PickerID   :: integer(),
+-spec list_picker(WxParent, PickerID, AddID, DelID, Headers, Items, Label) -> Result
+    when WxParent   :: wx:wx_object(),
+         PickerID   :: integer(),
          AddID      :: integer(),
          DelID      :: integer(),
          Headers    :: [{Label :: unicode:chardata(), PixWidth :: integer()}],
          Items      :: [[unicode:chardata()]],
-         Parent     :: wx:wx_object(),
          Label      :: unicode:chardata(),
          Result     :: {WxListCtrl :: wx:wx_object(),
                         AddB       :: wx:wx_object(),
                         DelB       :: wx:wx_object(),
                         Sizer      :: wx:wx_object()}.
-list_picker(PickerID, AddID, DelID, Headers, Items, Parent, Label) ->
-    Sizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Parent, [{label, Label}]),
-    Picker = list_control(PickerID, Headers, Items, Parent, Label),
-    AddButton = png_button(Parent, AddID, ?iconADD),
-    DelButton = png_button(Parent, DelID, ?iconDEL),
+list_picker(WxParent, PickerID, AddID, DelID, Headers, Items, Label) ->
+    Sizer = wxStaticBoxSizer:new(?wxHORIZONTAL, WxParent, [{label, Label}]),
+    Picker = list_control(WxParent, PickerID, Headers, Items),
+    AddButton = png_button(WxParent, AddID, ?iconADD),
+    DelButton = png_button(WxParent, DelID, ?iconDEL),
     ButtSz = wxBoxSizer:new(?wxVERTICAL),
     BaseFlags = [{proportion, 0}, {flag, ?wxEXPAND}],
     WideFlags = [{proportion, 1}, {flag, ?wxEXPAND}],
@@ -293,16 +293,15 @@ list_picker(PickerID, AddID, DelID, Headers, Items, Parent, Label) ->
     _ = wxSizer:add(Sizer, ButtSz, BaseFlags),
     {Picker, AddButton, DelButton, Sizer}.
 
--spec list_control(PickerID, Headers, Items, Parent, Label) -> Picker
-    when PickerID   :: integer(),
+-spec list_control(WxParent, PickerID, Headers, Items) -> Picker
+    when WxParent   :: wx:wx_object(),
+         PickerID   :: integer(),
          Headers    :: [{Label :: unicode:chardata(), PixWidth :: integer()}],
          Items      :: [[unicode:chardata()]],
-         Parent     :: wx:wx_object(),
-         Label      :: unicode:chardata(),
          Picker     :: wx:wx_object().
-list_control(PickerID, Headers, Items, Parent, Label) ->
-    Picker = wxListCtrl:new(Parent, [{winid, PickerID},
-                                     {style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+list_control(WxParent, PickerID, Headers, Items) ->
+    Picker = wxListCtrl:new(WxParent, [{winid, PickerID},
+                                       {style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
     ColNums = lists:seq(0, length(Headers) - 1),
     Cols = lists:zip(ColNums, Headers),
     AddCol =
