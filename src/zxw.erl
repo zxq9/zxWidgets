@@ -30,7 +30,8 @@
 
 -module(zxw).
 -include_lib("wx/include/wx.hrl").
--export([text_input_grid/3, list_picker/7, modal_text_input/4,
+-export([base_flags/0, wide_flags/0,
+         text_input_grid/3, list_picker/7, modal_text_input/4,
          yes_no_box/1, png_button/3,
          show_message/2]).
 
@@ -48,6 +49,18 @@
                         | {label, tag()}
                         | {tag(), tag()}.
 -type indexed_widget() :: {field_index(), wx:wx_object()}.
+
+%% @doc
+%% Returns sane default base expansion flags (proportion = 0) for use in
+%% `wxSizer:add(This, Window, Options)':
+%%   `[{proportion, 0}, {flag, ?wxEXPAND}]'
+base_flags() -> [{proportion, 0}, {flag, ?wxEXPAND}].
+
+%% @doc
+%% Returns sane default wide expansion flags (proportion = 1) for use in
+%% `wxSizer:add(This, Window, Options)':
+%%   `[{proportion, 1}, {flag, ?wxEXPAND}]'
+wide_flags() -> [{proportion, 1}, {flag, ?wxEXPAND}].
 
 %% @doc
 %% Creates a "Yes/No" or "Affirm/Cancel" button box with a "Yes/Affirm" button on
@@ -120,9 +133,6 @@ show_message(WxParent, Message) ->
          Result    :: {ok, Values} | cancel,
          Values    :: [unicode:chardata()].
 modal_text_input(WxParent, Title, Header, Labels) ->
-    BaseFlags = [{proportion, 0}, {flag, ?wxEXPAND}],
-    WideFlags = [{proportion, 1}, {flag, ?wxEXPAND}],
-
     Dialog = wxDialog:new(WxParent, ?wxID_ANY, Title),
     Sz = wxBoxSizer:new(?wxVERTICAL),
     HeadSz = wxStaticBoxSizer:new(?wxVERTICAL, Dialog, [{label, Header}]),
@@ -132,16 +142,16 @@ modal_text_input(WxParent, Title, Header, Labels) ->
     ok = wxFlexGridSizer:setFlexibleDirection(GridSz, ?wxHORIZONTAL),
     ok = wxFlexGridSizer:addGrowableCol(GridSz, 1),
     ok = wxStaticBoxSizer:setMinSize(HeadSz, 300, 70),
-    _ = wxSizer:add(Sz, HeadSz, WideFlags),
+    _ = wxSizer:add(Sz, HeadSz, wide_flags()),
     _ = wxSizer:add(Sz, ButtSz, [{flag, ?wxCENTER}]),
-    _ = wxSizer:add(HeadSz, GridSz, WideFlags),
+    _ = wxSizer:add(HeadSz, GridSz, wide_flags()),
 
     MakeInputElement =
         fun(Label) ->
             L = wxStaticText:new(Dialog, ?wxID_ANY, Label),
             T = wxTextCtrl:new(Dialog, ?wxID_ANY, [{style, ?wxTAB_TRAVERSAL}]),
-            _ = wxSizer:add(GridSz, L, BaseFlags),
-            _ = wxSizer:add(GridSz, T, WideFlags),
+            _ = wxSizer:add(GridSz, L, base_flags()),
+            _ = wxSizer:add(GridSz, T, wide_flags()),
             T
         end,
     Elements = lists:map(MakeInputElement, Labels),
@@ -193,13 +203,7 @@ text_input_grid(WxParent, Cols, Rows) ->
     DataRows = render_body(WxParent, Rows, Cols),
     All = lists:flatten([TopRow | DataRows]),
 
-    BaseFlags = [{proportion, 0}, {flag, ?wxEXPAND}],
-    WideFlags = [{proportion, 1}, {flag, ?wxEXPAND}],
-    Add =
-        fun
-            ({{label, _}, Widget}) -> wxSizer:add(GridSz, Widget, BaseFlags);
-            ({_, Widget})          -> wxSizer:add(GridSz, Widget, WideFlags)
-        end,
+    Add = fun ({_, Widget}) -> wxSizer:add(GridSz, Widget, wide_flags()) end,
     ok = lists:foreach(Add, All),
 
     FieldList = lists:flatten([tl(DataRow) || DataRow <- DataRows]),
@@ -211,7 +215,7 @@ text_input_grid(WxParent, Cols, Rows) ->
          Widgets  :: [indexed_widget()].
 render_head(WxParent, Cols) ->
     Spacer = {blank, wxBoxSizer:new(?wxHORIZONTAL)},
-    Labels = render_head(Cols, WxParent, []),
+    Labels = render_head(WxParent, Cols, []),
     [Spacer | Labels].
 
 -spec render_head(WxParent, Cols, Acc) -> Widgets
@@ -222,7 +226,7 @@ render_head(WxParent, Cols) ->
 render_head(_, [], Acc) ->
     lists:reverse(Acc);
 render_head(WxParent, [{Tag, Label} | Cols], Acc) ->
-    Element = {{Tag, label}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
+    Element = {{label, Tag}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
     render_head(WxParent, Cols, [Element | Acc]).
 
 -spec render_body(WxParent, Rows, Cols) -> Widgets
@@ -242,7 +246,7 @@ render_body(WxParent, Rows, Cols) ->
 render_body(_, [], _, Acc) ->
     lists:reverse(Acc);
 render_body(WxParent, [{Tag, Label} | Rows], Cols, Acc) ->
-    First = {{label, Tag}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
+    First = {{Tag, label}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
     Fields = render_row(WxParent, Tag, Cols, []),
     render_body(WxParent, Rows, Cols, [[First | Fields] | Acc]).
 
@@ -285,12 +289,10 @@ list_picker(WxParent, PickerID, AddID, DelID, Headers, Items, Label) ->
     AddButton = png_button(WxParent, AddID, ?iconADD),
     DelButton = png_button(WxParent, DelID, ?iconDEL),
     ButtSz = wxBoxSizer:new(?wxVERTICAL),
-    BaseFlags = [{proportion, 0}, {flag, ?wxEXPAND}],
-    WideFlags = [{proportion, 1}, {flag, ?wxEXPAND}],
-    _ = wxSizer:add(Sizer, Picker, WideFlags),
-    _ = wxSizer:add(ButtSz, AddButton, BaseFlags),
-    _ = wxSizer:add(ButtSz, DelButton, BaseFlags),
-    _ = wxSizer:add(Sizer, ButtSz, BaseFlags),
+    _ = wxSizer:add(Sizer, Picker, wide_flags()),
+    _ = wxSizer:add(ButtSz, AddButton, base_flags()),
+    _ = wxSizer:add(ButtSz, DelButton, base_flags()),
+    _ = wxSizer:add(Sizer, ButtSz, base_flags()),
     {Picker, AddButton, DelButton, Sizer}.
 
 -spec list_control(WxParent, PickerID, Headers, Items) -> Picker
