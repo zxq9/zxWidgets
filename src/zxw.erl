@@ -219,7 +219,7 @@ render_head(WxParent, Cols) ->
          Cols     :: [rank()],
          Acc      :: [indexed_widget()],
          Widgets  :: [indexed_widget()].
-render_head(WxParent, [], Acc) ->
+render_head(_, [], Acc) ->
     lists:reverse(Acc);
 render_head(WxParent, [{Tag, Label} | Cols], Acc) ->
     Element = {{Tag, label}, wxStaticText:new(WxParent, ?wxID_ANY, Label)},
