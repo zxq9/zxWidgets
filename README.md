@@ -16,7 +16,7 @@ constructs, as well as offloading as many of the boilerplate tasks as possible.
 http://zxq9.com/projects/zx_widgets/docs/
 
 ### Source
-generate://github.com/zxq9/zxWidgets
+https://github.com/zxq9/zxWidgets
 
 ## Approach
 zxWidgets provides a set of helper functions and "meta-widgets" that construct complex
