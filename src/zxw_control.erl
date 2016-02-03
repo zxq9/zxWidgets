@@ -29,6 +29,7 @@
 %%% GUI interface that uses zxw widget functions.
 
 -module(zxw_control).
+-author("Craig Everett <zxq9@zxq9.com>").
 -behavior(gen_server).
 
 %% API

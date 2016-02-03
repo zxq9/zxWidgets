@@ -29,6 +29,7 @@
 %%% @end
 
 -module(zxw).
+-author("Craig Everett <zxq9@zxq9.com>").
 -include_lib("wx/include/wx.hrl").
 -export([flags/1,
          text_input_grid/3, list_picker/7, list_control/4, modal_text_input/4,

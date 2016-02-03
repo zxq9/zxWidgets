@@ -4,5 +4,7 @@
 
 main(_) ->
     true = code:add_patha("ebin"),
-    Result = make:all(),
-    io:format("~p~n", [Result]).
+    Modules = make:all(),
+    ok = io:format("~p~n", [Modules]),
+    ok = io:format("Writing docs...~n"),
+    ok = edoc:application(zx_widgets, ".", []).
