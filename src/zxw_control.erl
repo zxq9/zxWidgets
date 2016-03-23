@@ -32,30 +32,39 @@
 -author("Craig Everett <zxq9@zxq9.com>").
 -behavior(gen_server).
 
+
 %% API
 -export([start_link/1, set_conf/2, get_conf/1, get_conf/2]).
+
 
 %% gen_server callbacks
 -export([init/1,
          handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
-%% Note: This may need to revert back to a dictionary if support >= R17 is
+
+%%% Types
+
+%% Note: This may need to revert back to a dictionary if support =< R17 is
 %%       required again. There is effectively no difference in performance.
 -type state() :: map().
 
-%% Interface
+
+%%% Interface
+
 -spec set_conf(Attribute, Value) -> ok
     when Attribute :: term(),
          Value     :: term().
 set_conf(Attribute, Value) ->
     gen_server:cast(?MODULE, {set_conf, Attribute, Value}).
 
+
 -spec get_conf(Attribute) -> {ok, Value} | {error, undefined}
     when Attribute :: term(),
          Value     :: term().
 get_conf(Attribute) ->
     gen_server:call(?MODULE, {get_conf, Attribute}).
+
 
 -spec get_conf(Attribute, Default) -> {ok, Value} | {ok, Default}
     when Attribute :: term(),
@@ -64,17 +73,22 @@ get_conf(Attribute) ->
 get_conf(Attribute, Default) ->
     gen_server:call(?MODULE, {get_conf, Attribute, Default}).
 
-%% Startup
+
+%%% Startup
+
 -spec start_link(Conf :: [{term(), term()}]) -> {ok, pid()}.
 start_link(Conf) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, Conf, []).
+
 
 -spec init(Conf :: [{term(), term()}]) -> {ok, state()}.
 init(Conf) ->
     State = maps:from_list(Conf),
     {ok, State}.
 
-%% gen_server behavior
+
+%%% gen_server behavior
+
 -spec handle_call(term(), {pid(), term()}, state) -> {reply, Reply, state()}
     when Reply :: {ok, term()} | {error, undefined}.
 handle_call({get_conf, Attribute}, _, State) ->
@@ -87,15 +101,19 @@ handle_call({get_conf, Attribute, Default}, _, State) ->
     Value = maps:get(Attribute, State, Default),
     {reply, {ok, Value}, State}.
 
+
 -spec handle_cast(term(), state()) -> {noreply, state()}.
 handle_cast({set_conf, Attribute, Value}, State) ->
     {noreply, maps:put(Attribute, Value, State)}.
 
+
 -spec handle_info(term(), state()) -> {noreply, state()}.
 handle_info(_, State) -> {noreply, State}.
 
+
 -spec terminate(term(), state()) -> ok.
 terminate(_, _) -> ok.
+
 
 -spec code_change(term(), state(), term()) -> {ok, state()}.
 code_change(_Version, State, _Extra) -> {ok, State}.
