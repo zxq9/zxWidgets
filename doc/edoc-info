@@ -1,3 +1,0 @@
-%% encoding: UTF-8
-{application,zx_widgets}.
-{modules,[zxw,zxw_control]}.
